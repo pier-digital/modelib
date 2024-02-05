@@ -4,7 +4,7 @@ init:
 
 .PHONY: tests
 tests:
-	poetry run pytest -vv --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=app --cov=modelib/ tests/ | tee pytest-coverage.txt
+	poetry run pytest | tee pytest-coverage.txt
 
 .PHONY: formatting
 formatting:

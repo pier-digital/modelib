@@ -4,6 +4,10 @@ version = "0.1.0"
 description = "A minimalist framework for online deployment of sklearn-like models"
 authors = ["Gabriel Guarisa <gabrielguarisa@gmail.com>"]
 readme = "README.md"
+repository = "https://github.com/pier-digital/modelib"
+homepage = "https://github.com/pier-digital/modelib"
+license = "MIT"
+keywords = ["machine learning", "fastapi", "sklearn", "online deployment"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
@@ -21,6 +25,9 @@ ruff = "^0.1.13"
 pytest = "^8.0.0"
 pytest-cov = "^4.1.0"
 httpx = "^0.26.0"
+
+[tool.pytest.ini_options]
+addopts = "-vv --junitxml=pytest.xml -p no:warnings --cov-report term-missing:skip-covered --cov=modelib"
 
 [build-system]
 requires = ["poetry-core"]
