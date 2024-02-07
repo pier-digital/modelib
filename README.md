@@ -100,3 +100,15 @@ The created routes expect a JSON payload with the features as keys and the value
   "petal width (cm)": 0.2
 }
 ```
+
+The response will be a JSON with the prediction:
+
+```json
+{
+  "result": 0
+}
+```
+
+## Contributing
+
+If you want to contribute to the project, please read the [CONTRIBUTING.md](CONTRIBUTING.md) file for more information.
