@@ -13,7 +13,7 @@ keywords = ["machine learning", "fastapi", "sklearn", "online deployment"]
 python = "^3.8"
 joblib = "^1.3.2"
 uvicorn = {extras = ["standard"], version = "^0.26.0"}
-fastapi = "^0.109.0"
+fastapi = "^0.109.1"
 prometheus-fastapi-instrumentator = "^6.1.0"
 python-json-logger = "^2.0.7"
 pandas = "*"
