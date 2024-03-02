@@ -8,7 +8,7 @@ import pydantic
 
 from modelib.core import exceptions, schemas
 
-from .base import BaseRunner
+from .base import PayloadManager, BaseRunner
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator
 
@@ -24,26 +24,25 @@ class SklearnBaseRunner(BaseRunner):
                 f"Predictor must be an instance of sklearn.base.BaseEstimator, got {type(predictor)}"
             )
 
-        predictor = predictor.set_output(transform="pandas")
+        self._predictor = predictor.set_output(transform="pandas")
+        self._payload_manager = PayloadManager(**kwargs)
 
-        features = kwargs.get("features")
-        feature_names = [f["name"] for f in features]
+    @property
+    def predictor(self) -> BaseEstimator:
+        return self._predictor
 
-        if hasattr(predictor, "feature_names_in_"):
-            for f in predictor.feature_names_in_:
-                if f not in feature_names:
-                    raise ValueError(f"Feature {f} is not in features: {features}")
-
-        super().__init__(predictor=predictor, **kwargs)
+    @property
+    def payload_manager(self) -> PayloadManager:
+        return self._payload_manager
 
     def execute(self, input_df: pd.DataFrame) -> typing.Any:
         raise NotImplementedError
 
     def get_runner_func(self) -> typing.Callable:
-        def runner_func(data: self.request_model):
+        def runner_func(data: self.payload_manager.request_model):
             try:
                 input_df = (
-                    pd.DataFrame(data.model_dump(by_alias=False), index=[0])
+                    pd.DataFrame(data.model_dump(by_alias=True), index=[0])
                     if isinstance(data, pydantic.BaseModel)
                     else data
                 )
@@ -58,11 +57,11 @@ class SklearnBaseRunner(BaseRunner):
                     detail={
                         "error": str(ex),
                         "traceback": str(traceback.format_exc()),
-                        "runner": self.name,
+                        "runner": self.payload_manager.name,
                     },
                 ) from ex
 
-        runner_func.__name__ = self.name
+        runner_func.__name__ = self.payload_manager.name
         return runner_func
 
 
@@ -72,10 +71,12 @@ class SklearnRunner(SklearnBaseRunner):
         name: str,
         predictor: BaseEstimator,
         method_name: str,
-        features: typing.List[dict],
+        request_model: typing.Union[typing.Type[pydantic.BaseModel], typing.List[dict]],
         **kwargs,
     ):
-        super().__init__(name=name, predictor=predictor, features=features, **kwargs)
+        super().__init__(
+            predictor=predictor, name=name, request_model=request_model, **kwargs
+        )
 
         if not hasattr(predictor, method_name):
             raise ValueError(f"Predictor does not have method {method_name}")
@@ -90,9 +91,6 @@ class SklearnRunner(SklearnBaseRunner):
     def method(self) -> typing.Callable:
         return getattr(self.predictor, self.method_name)
 
-    def to_dict(self) -> dict:
-        return {**super().to_dict(), "method_name": self.method_name}
-
     def execute(self, input_df: pd.DataFrame) -> typing.Any:
         return {"result": self.method(input_df).tolist()[0]}
 
@@ -103,10 +101,19 @@ class SklearnPipelineRunner(SklearnBaseRunner):
         name: str,
         predictor: Pipeline,
         method_names: typing.List[str],
-        features: typing.List[dict],
+        request_model: typing.Union[typing.Type[pydantic.BaseModel], typing.List[dict]],
         **kwargs,
     ):
-        super().__init__(name=name, predictor=predictor, features=features, **kwargs)
+        kwargs["response_model"] = kwargs.get(
+            "response_model", schemas.ResultResponseWithStepsModel
+        )
+
+        super().__init__(
+            name=name,
+            predictor=predictor,
+            request_model=request_model,
+            **kwargs,
+        )
 
         method_names = [method_names] if isinstance(method_names, str) else method_names
 
@@ -130,13 +137,6 @@ class SklearnPipelineRunner(SklearnBaseRunner):
     def method_names(self) -> typing.List[str]:
         return self._method_names
 
-    @property
-    def response_model(self) -> typing.Type[pydantic.BaseModel]:
-        return schemas.ResultResponseWithStepsModel
-
-    def to_dict(self) -> dict:
-        return {**super().to_dict(), "method_names": self.method_names}
-
     def execute(self, input_df: pd.DataFrame) -> typing.Any:
         step_outputs = {}
         previous_step_output = input_df.copy()
@@ -153,7 +153,7 @@ class SklearnPipelineRunner(SklearnBaseRunner):
                     detail={
                         "error": str(ex),
                         "traceback": str(traceback.format_exc()),
-                        "runner": self.name,
+                        "runner": self.payload_manager.name,
                         "step": step_name,
                         "method": method_name,
                         "step_outputs": step_outputs,

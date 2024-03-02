@@ -2,6 +2,8 @@ import fastapi
 from fastapi.testclient import TestClient
 
 import modelib as ml
+import pytest
+import pydantic
 
 
 def create_model():
@@ -34,22 +36,37 @@ FEATURES = [
     {"name": "petal width (cm)", "dtype": "float64"},
 ]
 
+
+class InputData(pydantic.BaseModel):
+    sepal_length: float = pydantic.Field(alias="sepal length (cm)")
+    sepal_width: float = pydantic.Field(alias="sepal width (cm)")
+    petal_length: float = pydantic.Field(alias="petal length (cm)")
+    petal_width: float = pydantic.Field(alias="petal width (cm)")
+
+
 MODEL = create_model()
 
 
-def test_example():
+@pytest.mark.parametrize(
+    "request_model,model",
+    [
+        (FEATURES, MODEL),
+        (InputData, MODEL),
+    ],
+)
+def test_example(request_model, model):
     simple_runner = ml.SklearnRunner(
         name="my simple model",
-        predictor=MODEL,
+        predictor=model,
         method_name="predict",
-        features=FEATURES,
+        request_model=request_model,
     )
 
     pipeline_runner = ml.SklearnPipelineRunner(
         "Pipeline Model",
-        predictor=MODEL,
+        predictor=model,
         method_names=["transform", "predict"],
-        features=FEATURES,
+        request_model=request_model,
     )
 
     app = fastapi.FastAPI()

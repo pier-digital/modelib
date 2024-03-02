@@ -1,5 +1,5 @@
 import fastapi
-
+import pydantic
 import modelib as ml
 
 
@@ -28,12 +28,20 @@ def create_model():
     return model
 
 
-FEATURES = [
-    {"name": "sepal length (cm)", "dtype": "float64"},
-    {"name": "sepal width (cm)", "dtype": "float64"},
-    {"name": "petal length (cm)", "dtype": "float64"},
-    {"name": "petal width (cm)", "dtype": "float64"},
-]
+# InputData = [
+#     {"name": "sepal length (cm)", "dtype": "float64"},
+#     {"name": "sepal width (cm)", "dtype": "float64"},
+#     {"name": "petal length (cm)", "dtype": "float64"},
+#     {"name": "petal width (cm)", "dtype": "float64"},
+# ]
+
+
+class InputData(pydantic.BaseModel):
+    sepal_length: float = pydantic.Field(alias="sepal length (cm)")
+    sepal_width: float = pydantic.Field(alias="sepal width (cm)")
+    petal_length: float = pydantic.Field(alias="petal length (cm)")
+    petal_width: float = pydantic.Field(alias="petal width (cm)")
+
 
 MODEL = create_model()
 
@@ -41,14 +49,14 @@ simple_runner = ml.SklearnRunner(
     name="my simple model",
     predictor=MODEL,
     method_name="predict",
-    features=FEATURES,
+    request_model=InputData,
 )
 
 pipeline_runner = ml.SklearnPipelineRunner(
     "Pipeline Model",
     predictor=MODEL,
     method_names=["transform", "predict"],
-    features=FEATURES,
+    request_model=InputData,
 )
 
 app = fastapi.FastAPI()
