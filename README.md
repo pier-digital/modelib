@@ -39,13 +39,25 @@ MODEL = Pipeline(
 Let's assume that you have a dataset with the following columns:
 
 ```python
-FEATURES = [
+request_model = [
     {"name": "sepal length (cm)", "dtype": "float64"},
     {"name": "sepal width (cm)", "dtype": "float64"},
     {"name": "petal length (cm)", "dtype": "float64"},
     {"name": "petal width (cm)", "dtype": "float64"},
 ]
 ```
+Alternatively, you can use a pydantic model to define the request model, where the alias field is used to match variable name used in the training dataset:
+
+```python
+class InputData(pydantic.BaseModel):
+    sepal_length: float = pydantic.Field(alias="sepal length (cm)")
+    sepal_width: float = pydantic.Field(alias="sepal width (cm)")
+    petal_length: float = pydantic.Field(alias="petal length (cm)")
+    petal_width: float = pydantic.Field(alias="petal width (cm)")
+
+request_model = InputData
+```
+
 After the model is created and trained, you can create a modelib runner for this model as follows:
 
 ```python
@@ -55,7 +67,7 @@ simple_runner = ml.SklearnRunner(
     name="my simple model",
     predictor=MODEL,
     method_name="predict",
-    features=FEATURES,
+    request_model=request_model,
 )
 ```
 
@@ -66,7 +78,7 @@ pipeline_runner = ml.SklearnPipelineRunner(
     "Pipeline Model",
     predictor=MODEL,
     method_names=["transform", "predict"],
-    features=FEATURES,
+    request_model=request_model,
 )
 ```
 
