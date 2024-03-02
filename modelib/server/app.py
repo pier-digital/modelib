@@ -12,10 +12,13 @@ def init_app(
     app: fastapi.FastAPI,
     runners: typing.List[BaseRunner],
     include_infrastructure: bool = True,
+    **runners_router_kwargs,
 ) -> fastapi.FastAPI:
     exceptions.init_app(app)
 
-    app.include_router(endpoint_factory.create_runners_router(runners))
+    app.include_router(
+        endpoint_factory.create_runners_router(runners, **runners_router_kwargs)
+    )
 
     if include_infrastructure:
         infrastructure.init_app(app)

@@ -1,7 +1,7 @@
 import typing
 
 import pydantic
-
+from slugify import slugify
 from modelib.core import schemas
 
 
@@ -12,7 +12,7 @@ def remove_unset_features(features: typing.List[dict]) -> typing.List[dict]:
     ]
 
 
-class PayloadManager:
+class EndpointMetadataManager:
     def __init__(
         self,
         name: str,
@@ -41,6 +41,10 @@ class PayloadManager:
         return self._name
 
     @property
+    def slug(self) -> str:
+        return slugify(self.name)
+
+    @property
     def request_model(self) -> typing.Type[pydantic.BaseModel]:
         return self._request_model
 
@@ -51,7 +55,7 @@ class PayloadManager:
 
 class BaseRunner:
     @property
-    def payload_manager(self) -> PayloadManager:
+    def endpoint_metadata_manager(self) -> EndpointMetadataManager:
         raise NotImplementedError
 
     def get_runner_func(self) -> typing.Callable:

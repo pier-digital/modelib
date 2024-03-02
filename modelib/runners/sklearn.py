@@ -8,7 +8,7 @@ import pydantic
 
 from modelib.core import exceptions, schemas
 
-from .base import PayloadManager, BaseRunner
+from .base import EndpointMetadataManager, BaseRunner
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator
 
@@ -25,21 +25,21 @@ class SklearnBaseRunner(BaseRunner):
             )
 
         self._predictor = predictor.set_output(transform="pandas")
-        self._payload_manager = PayloadManager(**kwargs)
+        self._endpoint_metadata_manager = EndpointMetadataManager(**kwargs)
 
     @property
     def predictor(self) -> BaseEstimator:
         return self._predictor
 
     @property
-    def payload_manager(self) -> PayloadManager:
-        return self._payload_manager
+    def endpoint_metadata_manager(self) -> EndpointMetadataManager:
+        return self._endpoint_metadata_manager
 
     def execute(self, input_df: pd.DataFrame) -> typing.Any:
         raise NotImplementedError
 
     def get_runner_func(self) -> typing.Callable:
-        def runner_func(data: self.payload_manager.request_model):
+        def runner_func(data: self.endpoint_metadata_manager.request_model):
             try:
                 input_df = (
                     pd.DataFrame(data.model_dump(by_alias=True), index=[0])
@@ -57,11 +57,11 @@ class SklearnBaseRunner(BaseRunner):
                     detail={
                         "error": str(ex),
                         "traceback": str(traceback.format_exc()),
-                        "runner": self.payload_manager.name,
+                        "runner": self.endpoint_metadata_manager.name,
                     },
                 ) from ex
 
-        runner_func.__name__ = self.payload_manager.name
+        runner_func.__name__ = self.endpoint_metadata_manager.name
         return runner_func
 
 
@@ -153,7 +153,7 @@ class SklearnPipelineRunner(SklearnBaseRunner):
                     detail={
                         "error": str(ex),
                         "traceback": str(traceback.format_exc()),
-                        "runner": self.payload_manager.name,
+                        "runner": self.endpoint_metadata_manager.name,
                         "step": step_name,
                         "method": method_name,
                         "step_outputs": step_outputs,
