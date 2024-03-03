@@ -9,11 +9,23 @@ from modelib.core import endpoint_factory
 
 
 def init_app(
-    app: fastapi.FastAPI,
+    *,
     runners: typing.List[BaseRunner],
+    app: fastapi.FastAPI = fastapi.FastAPI(),
     include_infrastructure: bool = True,
     **runners_router_kwargs,
 ) -> fastapi.FastAPI:
+    """Initialize FastAPI application with Modelib runners.
+
+    Args:
+        runners: List of runners to be included in the application.
+        app: FastAPI application to be initialized. If not provided, a new application will be created.
+        include_infrastructure: Whether to include infrastructure endpoints.
+        **runners_router_kwargs: Additional keyword arguments to be passed to the runners router.
+
+    Returns:
+        FastAPI application with Modelib runners.
+    """
     exceptions.init_app(app)
 
     app.include_router(

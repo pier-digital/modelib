@@ -1,79 +1,12 @@
 import fastapi
 from fastapi.testclient import TestClient
-
-import modelib as ml
+import example
 import pytest
-import pydantic
+import modelib as ml
 
 
-def create_model():
-    from sklearn.datasets import load_iris
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.pipeline import Pipeline
-    from sklearn.preprocessing import StandardScaler
-    from sklearn.model_selection import train_test_split
-
-    X, y = load_iris(return_X_y=True, as_frame=True)
-
-    X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
-
-    model = Pipeline(
-        [
-            ("scaler", StandardScaler()),
-            ("clf", RandomForestClassifier(random_state=42)),
-        ]
-    ).set_output(transform="pandas")
-
-    model.fit(X_train, y_train)
-
-    return model
-
-
-FEATURES = [
-    {"name": "sepal length (cm)", "dtype": "float64"},
-    {"name": "sepal width (cm)", "dtype": "float64"},
-    {"name": "petal length (cm)", "dtype": "float64"},
-    {"name": "petal width (cm)", "dtype": "float64"},
-]
-
-
-class InputData(pydantic.BaseModel):
-    sepal_length: float = pydantic.Field(alias="sepal length (cm)")
-    sepal_width: float = pydantic.Field(alias="sepal width (cm)")
-    petal_length: float = pydantic.Field(alias="petal length (cm)")
-    petal_width: float = pydantic.Field(alias="petal width (cm)")
-
-
-MODEL = create_model()
-
-
-@pytest.mark.parametrize(
-    "request_model,model",
-    [
-        (FEATURES, MODEL),
-        (InputData, MODEL),
-    ],
-)
-def test_example(request_model, model):
-    simple_runner = ml.SklearnRunner(
-        name="my simple model",
-        predictor=model,
-        method_name="predict",
-        request_model=request_model,
-    )
-
-    pipeline_runner = ml.SklearnPipelineRunner(
-        "Pipeline Model",
-        predictor=model,
-        method_names=["transform", "predict"],
-        request_model=request_model,
-    )
-
-    app = fastapi.FastAPI()
-
-    app = ml.init_app(app, [simple_runner, pipeline_runner])
-
-    client = TestClient(app)
+def test_example():
+    client = TestClient(example.app)
 
     response = client.get("/docs")
 
@@ -118,3 +51,95 @@ def test_example(request_model, model):
             "clf": [0],
         },
     }
+
+
+@pytest.mark.parametrize(
+    "runner,endpoint_path,expected_response",
+    [
+        (
+            ml.SklearnRunner(
+                name="my simple model",
+                predictor=example.MODEL,
+                method_name="predict",
+                request_model=example.InputData,
+            ),
+            "/my-simple-model",
+            {"result": 0},
+        ),
+        (
+            ml.SklearnRunner(
+                name="my 232, simple model",
+                predictor=example.MODEL,
+                method_name="predict",
+                request_model=example.features_metadata,
+            ),
+            "/my-232-simple-model",
+            {"result": 0},
+        ),
+        (
+            ml.SklearnPipelineRunner(
+                "Pipeline Model",
+                predictor=example.MODEL,
+                method_names=["transform", "predict"],
+                request_model=example.InputData,
+            ),
+            "/pipeline-model",
+            {
+                "result": 0,
+                "steps": {
+                    "scaler": [
+                        {
+                            "sepal length (cm)": -7.081194586015879,
+                            "sepal width (cm)": -6.845571885453045,
+                            "petal length (cm)": -2.135591504400147,
+                            "petal width (cm)": -1.5795728805764124,
+                        }
+                    ],
+                    "clf": [0],
+                },
+            },
+        ),
+        (
+            ml.SklearnPipelineRunner(
+                "My SUPER    Pipeline Model",
+                predictor=example.MODEL,
+                method_names=["transform", "predict"],
+                request_model=example.features_metadata,
+            ),
+            "/my-super-pipeline-model",
+            {
+                "result": 0,
+                "steps": {
+                    "scaler": [
+                        {
+                            "sepal length (cm)": -7.081194586015879,
+                            "sepal width (cm)": -6.845571885453045,
+                            "petal length (cm)": -2.135591504400147,
+                            "petal width (cm)": -1.5795728805764124,
+                        }
+                    ],
+                    "clf": [0],
+                },
+            },
+        ),
+    ],
+)
+def test_runners(runner, endpoint_path, expected_response):
+    app = fastapi.FastAPI()
+
+    app = ml.init_app(app=app, runners=[runner])
+
+    client = TestClient(app)
+
+    response = client.post(
+        endpoint_path,
+        json={
+            "sepal length (cm)": 0,
+            "sepal width (cm)": 0,
+            "petal length (cm)": 0,
+            "petal width (cm)": 0,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == expected_response
