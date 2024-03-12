@@ -1,7 +1,7 @@
 import typing
 
 import pydantic
-
+from slugify import slugify
 from modelib.core import schemas
 
 
@@ -12,34 +12,37 @@ def remove_unset_features(features: typing.List[dict]) -> typing.List[dict]:
     ]
 
 
-class BaseRunner:
+class EndpointMetadataManager:
     def __init__(
         self,
         name: str,
-        predictor: typing.Any,
-        features: typing.List[dict] = None,
+        request_model: typing.Union[typing.Type[pydantic.BaseModel], typing.List[dict]],
+        response_model: typing.Type[pydantic.BaseModel] = schemas.ResultResponseModel,
         **kwargs,
     ):
         self._name = name
-        self._predictor = predictor
-        self._features = remove_unset_features(features) if features else None
-        self._request_model = (
-            schemas.pydantic_model_from_list_of_dicts(self.name, self.features)
-            if self.features
-            else None
-        )
+        if isinstance(request_model, list):
+            request_model = remove_unset_features(request_model)
+            self._request_model = schemas.pydantic_model_from_list_of_dicts(
+                name, request_model
+            )
+        elif issubclass(request_model, pydantic.BaseModel):
+            self._request_model = request_model
+        else:
+            raise ValueError("request_model must be a pydantic.BaseModel subclass")
+
+        if not issubclass(response_model, pydantic.BaseModel):
+            raise ValueError("response_model must be a pydantic.BaseModel subclass")
+
+        self._response_model = response_model
 
     @property
     def name(self) -> str:
         return self._name
 
     @property
-    def predictor(self) -> typing.Any:
-        return self._predictor
-
-    @property
-    def features(self) -> typing.List[str]:
-        return self._features
+    def slug(self) -> str:
+        return slugify(self.name)
 
     @property
     def request_model(self) -> typing.Type[pydantic.BaseModel]:
@@ -47,16 +50,13 @@ class BaseRunner:
 
     @property
     def response_model(self) -> typing.Type[pydantic.BaseModel]:
-        return schemas.ResultResponseModel
+        return self._response_model
+
+
+class BaseRunner:
+    @property
+    def endpoint_metadata_manager(self) -> EndpointMetadataManager:
+        raise NotImplementedError
 
     def get_runner_func(self) -> typing.Callable:
-        raise NotImplementedError()
-
-    def to_dict(self) -> dict:
-        return {
-            "name": self.name,
-            "features": self.features,
-        }
-
-    def __dict__(self) -> dict:
-        return self.to_dict()
+        raise NotImplementedError

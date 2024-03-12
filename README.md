@@ -39,13 +39,25 @@ MODEL = Pipeline(
 Let's assume that you have a dataset with the following columns:
 
 ```python
-FEATURES = [
+request_model = [
     {"name": "sepal length (cm)", "dtype": "float64"},
     {"name": "sepal width (cm)", "dtype": "float64"},
     {"name": "petal length (cm)", "dtype": "float64"},
     {"name": "petal width (cm)", "dtype": "float64"},
 ]
 ```
+Alternatively, you can use a pydantic model to define the request model, where the alias field is used to match the variable names with the column names in the training dataset:
+
+```python
+class InputData(pydantic.BaseModel):
+    sepal_length: float = pydantic.Field(alias="sepal length (cm)")
+    sepal_width: float = pydantic.Field(alias="sepal width (cm)")
+    petal_length: float = pydantic.Field(alias="petal length (cm)")
+    petal_width: float = pydantic.Field(alias="petal width (cm)")
+
+request_model = InputData
+```
+
 After the model is created and trained, you can create a modelib runner for this model as follows:
 
 ```python
@@ -55,7 +67,7 @@ simple_runner = ml.SklearnRunner(
     name="my simple model",
     predictor=MODEL,
     method_name="predict",
-    features=FEATURES,
+    request_model=request_model,
 )
 ```
 
@@ -66,18 +78,24 @@ pipeline_runner = ml.SklearnPipelineRunner(
     "Pipeline Model",
     predictor=MODEL,
     method_names=["transform", "predict"],
-    features=FEATURES,
+    request_model=request_model,
 )
 ```
 
-Now you can extend a FastAPI app with the runners:
+Now you can create a FastAPI app with the runners:
+
+```python
+app = ml.init_app(runners=[simple_runner, pipeline_runner])
+```
+
+You can also pass an existing FastAPI app to the `init_app` function:
 
 ```python
 import fastapi
 
 app = fastapi.FastAPI()
 
-app = ml.init_app(app, [simple_runner, pipeline_runner])
+app = ml.init_app(app=app, runners=[simple_runner, pipeline_runner])
 ```
 
 The `init_app` function will add the necessary routes to the FastAPI app to serve the models. You can now start the app with:

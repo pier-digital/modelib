@@ -10,3 +10,7 @@ tests:
 formatting:
 	poetry run ruff format .
 	poetry run ruff check .
+
+.PHONY: example
+example:
+	poetry run python example.py
