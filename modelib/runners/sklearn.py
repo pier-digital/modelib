@@ -17,6 +17,7 @@ class SklearnBaseRunner(BaseRunner):
     def __init__(
         self,
         predictor: BaseEstimator,
+        endpoint_metadata_manager: typing.Optional[EndpointMetadataManager] = None,
         **kwargs,
     ):
         if not isinstance(predictor, BaseEstimator):
@@ -25,7 +26,11 @@ class SklearnBaseRunner(BaseRunner):
             )
 
         self._predictor = predictor.set_output(transform="pandas")
-        self._endpoint_metadata_manager = EndpointMetadataManager(**kwargs)
+        self._endpoint_metadata_manager = (
+            EndpointMetadataManager(**kwargs)
+            if endpoint_metadata_manager is None
+            else endpoint_metadata_manager
+        )
 
     @property
     def predictor(self) -> BaseEstimator:
@@ -41,8 +46,9 @@ class SklearnBaseRunner(BaseRunner):
     def get_runner_func(self) -> typing.Callable:
         def runner_func(data: self.endpoint_metadata_manager.request_model):
             try:
+                payload = data.model_dump(by_alias=True)
                 input_df = (
-                    pd.DataFrame(data.model_dump(by_alias=True), index=[0])
+                    pd.DataFrame(payload, index=[0])
                     if isinstance(data, pydantic.BaseModel)
                     else data
                 )
