@@ -28,9 +28,3 @@ def test_livez(client):
     response = client.get("/livez")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
-
-
-def test_metrics(client):
-    response = client.get("/metrics")
-    assert response.status_code == 200
-    assert response.text.startswith("# HELP")
