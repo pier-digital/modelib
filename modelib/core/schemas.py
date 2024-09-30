@@ -114,11 +114,5 @@ class FeatureMetadataSchema(pydantic.BaseModel):
     indexes: typing.Optional[typing.List[str]] = []
 
 
-class DeploymentMetadataSchema(pydantic.BaseModel):
-    version: str
-    features: typing.List[FeatureMetadataSchema]
-    runners: typing.List[typing.Dict[str, typing.Any]]
-
-
 class HealthCheckStausSchema(pydantic.BaseModel):
     status: str
