@@ -1,7 +1,5 @@
 import typing
 
-import traceback
-
 import numpy as np
 import pandas as pd
 import pydantic
@@ -11,6 +9,7 @@ from modelib.core import exceptions, schemas
 from .base import EndpointMetadataManager, BaseRunner
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator
+import fastapi
 
 
 class SklearnBaseRunner(BaseRunner):
@@ -54,18 +53,16 @@ class SklearnBaseRunner(BaseRunner):
                 )
                 return self.execute(input_df)
             except Exception as ex:
-                if isinstance(ex, exceptions.JsonAPIException):
+                if isinstance(ex, fastapi.HTTPException):
                     raise ex
 
-                raise exceptions.JsonAPIException(
+                raise fastapi.HTTPException(
                     status_code=500,
-                    title="Inference Internal Server Error",
                     detail={
-                        "error": str(ex),
-                        "traceback": str(traceback.format_exc()),
                         "runner": self.endpoint_metadata_manager.name,
+                        **exceptions.parse_exception(ex),
                     },
-                ) from ex
+                )
 
         runner_func.__name__ = self.endpoint_metadata_manager.name
         return runner_func
@@ -153,20 +150,15 @@ class SklearnPipelineRunner(SklearnBaseRunner):
                     previous_step_output
                 )
             except Exception as ex:
-                raise exceptions.JsonAPIException(
+                raise fastapi.HTTPException(
                     status_code=500,
-                    title="Inference Internal Server Error - Pipeline Step",
                     detail={
-                        "error": str(ex),
-                        "traceback": str(traceback.format_exc()),
                         "runner": self.endpoint_metadata_manager.name,
                         "step": step_name,
                         "method": method_name,
-                        "step_outputs": step_outputs,
-                        "previous_step_output_type": type(previous_step_output),
-                        "previous_step_output": str(previous_step_output),
+                        **exceptions.parse_exception(ex),
                     },
-                ) from ex
+                )
 
             if isinstance(previous_step_output, pd.DataFrame):
                 step_outputs[step_name] = previous_step_output.to_dict(orient="records")

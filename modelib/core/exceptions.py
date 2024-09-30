@@ -1,52 +1,41 @@
-from fastapi import FastAPI, Request
+import fastapi
 from fastapi.responses import JSONResponse
+import traceback
 
 
-class JsonAPIException(Exception):
-    def __init__(
-        self,
-        status_code,
-        title,
-        detail=None,
-        headers=None,
-        type_="JsonAPIException",
-        kind="json-api-exception",
-    ):
-        self.status_code = status_code
-        self.title = title
-        self.detail = detail
-        self.headers = headers or {}
-        if not isinstance(detail, dict):
-            self.detail = {"message": detail}
+def parse_exception(exception: Exception) -> dict:
+    data = {
+        "message": str(exception),
+        "type": type(exception).__name__,
+        "traceback": None,
+    }
 
-        self.detail["type"] = type_
-        self.detail["kind"] = kind
+    try:
+        data["traceback"] = "".join(
+            traceback.format_exception(None, exception, exception.__traceback__)
+        ).strip()
 
-        super().__init__(self.detail or self.title)
+    except Exception:
+        pass
 
-    def to_dict(self):
-        return {
-            "status": self.status_code,
-            "title": self.title,
-            "detail": self.detail,
-        }
+    return data
 
-    def content(self):
-        return {"errors": [self.to_dict()]}
 
-    def to_json_response(self):
+async def internal_exception_handler(request: fastapi.Request, exc: Exception):
+    if isinstance(exc, fastapi.HTTPException):
         return JSONResponse(
-            status_code=self.status_code,
-            content=self.content(),
-            headers=self.headers,
+            status_code=exc.status_code,
+            content=exc.detail,
         )
 
+    return JSONResponse(
+        status_code=500,
+        content={
+            "title": "Internal server error",
+            "error": parse_exception(exc),
+        },
+    )
 
-async def json_api_exception_handler(request: Request, exc: JsonAPIException):
-    response = exc.to_json_response()
 
-    return response
-
-
-def init_app(app: FastAPI):
-    app.exception_handler(JsonAPIException)(json_api_exception_handler)
+def init_app(app: fastapi.FastAPI):
+    app.exception_handler(500)(internal_exception_handler)
