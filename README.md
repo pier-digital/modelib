@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://github.com/pier-digital/modelib"><img src="https://raw.githubusercontent.com/pier-digital/modelib/main/logo.png" alt="modelib"></a>
+  <a href="https://github.com/pier-digital/modelib"><img src="https://raw.githubusercontent.com/pier-digital/modelib/main/images/logo.png" alt="modelib"></a>
 </p>
 <p align="center">
     <em>A minimalist framework for online deployment of sklearn-like models</em>
@@ -13,7 +13,6 @@
 [![License](https://img.shields.io/github/license/pier-digital/modelib)](https://github.com/pier-digital/modelib/blob/main/LICENSE)
 
 </div>
-
 
 ## Installation
 
@@ -46,6 +45,7 @@ request_model = [
     {"name": "petal width (cm)", "dtype": "float64"},
 ]
 ```
+
 Alternatively, you can use a pydantic model to define the request model, where the alias field is used to match the variable names with the column names in the training dataset:
 
 ```python
