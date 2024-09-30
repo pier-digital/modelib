@@ -17,6 +17,7 @@ scikit-learn = "*"
 fastapi = "*"
 python-slugify = "^8.0.1"
 pydantic = ">=2.0.0"
+uvicorn = "^0.31.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.1.13"
