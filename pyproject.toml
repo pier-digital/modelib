@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "modelib"
-version = "0.3.0a1"
+version = "0.3.0a2"
 description = "A minimalist framework for online deployment of sklearn-like models"
 authors = ["Gabriel Guarisa <gabrielguarisa@gmail.com>"]
 readme = "README.md"
