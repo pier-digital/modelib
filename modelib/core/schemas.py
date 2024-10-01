@@ -1,7 +1,5 @@
 import typing
 
-from enum import Enum
-
 import pydantic
 
 MAP_PANDAS_DTYPE_TO_PYDANTIC = {
@@ -27,22 +25,6 @@ class NullToDefaultValidator:
         return value
 
 
-def pydantic_model_from_list_of_dicts(name, fields) -> typing.Type[pydantic.BaseModel]:
-    """Create pydantic model from list of dicts"""
-    fields_dict = {}
-    fields_dict["model_config"] = pydantic.ConfigDict(protected_namespaces=())
-
-    for i, field in enumerate(fields):
-        field_name = field.get("alias", field.get("name", f"feat_{i}"))
-        fields_dict[field_name] = pydantic_field_from_dict(field)
-
-    return pydantic.create_model(
-        name,
-        __base__=pydantic.BaseModel,
-        **fields_dict,
-    )
-
-
 def pydantic_field_from_dict(field_dict: dict) -> pydantic.Field:
     """Create pydantic field from dict"""
     field_dict = field_dict.copy()
@@ -64,6 +46,22 @@ def pydantic_field_from_dict(field_dict: dict) -> pydantic.Field:
     return (dtype, pydantic.Field(default, alias=alias, json_schema_extra=field_dict))
 
 
+def pydantic_model_from_list_of_dicts(name, fields) -> typing.Type[pydantic.BaseModel]:
+    """Create pydantic model from list of dicts"""
+    fields_dict = {}
+    fields_dict["model_config"] = pydantic.ConfigDict(protected_namespaces=())
+
+    for i, field in enumerate(fields):
+        field_name = field.get("alias", field.get("name", f"feat_{i}"))
+        fields_dict[field_name] = pydantic_field_from_dict(field)
+
+    return pydantic.create_model(
+        name,
+        __base__=pydantic.BaseModel,
+        **fields_dict,
+    )
+
+
 class ResultResponseModel(pydantic.BaseModel):
     result: typing.Any
 
@@ -72,46 +70,13 @@ class ResultResponseWithStepsModel(ResultResponseModel):
     steps: typing.Dict[str, typing.Any]
 
 
-class JsonApiErrorResponseModel(pydantic.BaseModel):
-    status: int
-    title: str
-    detail: str
-
-
-class JsonApiErrorModel(pydantic.BaseModel):
-    errors: typing.List[JsonApiErrorResponseModel]
-
-
-class BaseEnum(str, Enum):
-    def __eq__(self, __x: object) -> bool:
-        return super().__eq__(__x) or str(self) == __x
-
-    def __str__(self) -> str:
-        return str(self.value)
-
-    def __hash__(self):
-        return hash(self.value)
-
-    def __repr__(self):
-        return self.value
-
-
-class DType(BaseEnum):
-    t_object = "object"
-    t_int64 = "int64"
-    t_float64 = "float64"
-    t_datetime64 = "datetime64"
-    t_bool = "bool"
-
-
 class FeatureMetadataSchema(pydantic.BaseModel):
     name: str
-    dtype: DType
+    dtype: typing.Literal["object", "int64", "float64", "datetime64", "bool"]
     alias: typing.Optional[str] = None
     default: typing.Optional[typing.Any] = None
-    optional: bool = False
+    optional: typing.Optional[bool] = False
     description: typing.Optional[str] = None
-    indexes: typing.Optional[typing.List[str]] = []
 
 
 class HealthCheckStausSchema(pydantic.BaseModel):

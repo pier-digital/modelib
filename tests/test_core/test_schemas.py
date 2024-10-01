@@ -10,11 +10,11 @@ from modelib.core import schemas
         (
             {
                 "name": "test",
-                "dtype": schemas.DType.t_object,
+                "dtype": "object",
             },
             {
                 "name": "test",
-                "dtype": schemas.DType.t_object,
+                "dtype": "object",
                 "alias": None,
                 "default": None,
                 "optional": False,
@@ -23,13 +23,13 @@ from modelib.core import schemas
         (
             {
                 "name": "test",
-                "dtype": schemas.DType.t_object,
+                "dtype": "object",
                 "alias": "test_alias",
                 "default": "test_default",
             },
             {
                 "name": "test",
-                "dtype": schemas.DType.t_object,
+                "dtype": "object",
                 "alias": "test_alias",
                 "default": "test_default",
                 "optional": True,

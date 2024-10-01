@@ -3,7 +3,6 @@ import typing
 import fastapi
 
 
-from modelib.core import schemas
 from modelib.runners.base import EndpointMetadataManager, BaseRunner
 
 
@@ -34,15 +33,6 @@ def create_runner_endpoint(
 def create_runners_router(
     runners: typing.List[BaseRunner], **runners_router_kwargs
 ) -> fastapi.APIRouter:
-    responses = runners_router_kwargs.pop("responses", {})
-    if 500 not in responses:
-        responses[500] = {
-            "model": schemas.JsonApiErrorModel,
-            "description": "Inference Internal Server Error",
-        }
-
-    runners_router_kwargs["responses"] = responses
-
     runners_router_kwargs["tags"] = runners_router_kwargs.get("tags", ["runners"])
 
     router = fastapi.APIRouter(**runners_router_kwargs)
