@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "modelib"
-version = "0.3.0a2"
+version = "0.3.0a3"
 description = "A minimalist framework for online deployment of sklearn-like models"
 authors = ["Gabriel Guarisa <gabrielguarisa@gmail.com>"]
 readme = "README.md"
@@ -10,7 +10,7 @@ license = "MIT"
 keywords = ["machine learning", "fastapi", "sklearn", "online deployment"]
 
 [tool.poetry.dependencies]
-python = ">=3.9"
+python = ">=3.10,<4.0"
 numpy = ">=2.0.0"
 pandas = ">=2.0.0"
 scikit-learn = "*"

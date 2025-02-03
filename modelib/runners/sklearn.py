@@ -10,7 +10,6 @@ from .base import BaseRunner
 from sklearn.base import BaseEstimator
 import fastapi
 from abc import abstractmethod
-import warnings
 
 
 class SklearnBaseRunner(BaseRunner):
