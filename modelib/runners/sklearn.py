@@ -6,44 +6,46 @@ import pydantic
 
 from modelib.core import exceptions, schemas
 
-from .base import EndpointMetadataManager, BaseRunner
-from sklearn.pipeline import Pipeline
+from .base import BaseRunner
 from sklearn.base import BaseEstimator
 import fastapi
+from abc import abstractmethod
+import warnings
 
 
 class SklearnBaseRunner(BaseRunner):
     def __init__(
         self,
         predictor: BaseEstimator,
-        endpoint_metadata_manager: typing.Optional[EndpointMetadataManager] = None,
+        method_names: typing.Union[str, typing.List[str]],
         **kwargs,
     ):
-        if not isinstance(predictor, BaseEstimator):
-            raise ValueError(
-                f"Predictor must be an instance of sklearn.base.BaseEstimator, got {type(predictor)}"
-            )
-
-        self._predictor = predictor.set_output(transform="pandas")
-        self._endpoint_metadata_manager = (
-            EndpointMetadataManager(**kwargs)
-            if endpoint_metadata_manager is None
-            else endpoint_metadata_manager
+        self._method_names = (
+            [method_names] if isinstance(method_names, str) else method_names
         )
+        self._predictor = predictor
+        self.validate()
+
+        super().__init__(**kwargs)
 
     @property
-    def predictor(self) -> BaseEstimator:
+    def method_names(self) -> typing.List[str]:
+        return self._method_names
+
+    @property
+    def predictor(self) -> typing.Callable:
         return self._predictor
 
-    @property
-    def endpoint_metadata_manager(self) -> EndpointMetadataManager:
-        return self._endpoint_metadata_manager
+    @abstractmethod
+    def validate(self) -> None:
+        pass
 
-    def execute(self, input_df: pd.DataFrame) -> typing.Any:
-        raise NotImplementedError
+    @abstractmethod
+    def execute(self, input_df: pd.DataFrame) -> dict:
+        pass
 
     def get_runner_func(self) -> typing.Callable:
-        def runner_func(data: self.endpoint_metadata_manager.request_model):
+        def runner_func(data: self.request_model):
             try:
                 payload = data.model_dump(by_alias=True)
                 input_df = (
@@ -59,88 +61,46 @@ class SklearnBaseRunner(BaseRunner):
                 raise fastapi.HTTPException(
                     status_code=500,
                     detail={
-                        "runner": self.endpoint_metadata_manager.name,
+                        "runner": self.name,
                         **exceptions.parse_exception(ex),
                     },
                 )
 
-        runner_func.__name__ = self.endpoint_metadata_manager.name
+        runner_func.__name__ = self.name
         return runner_func
 
 
 class SklearnRunner(SklearnBaseRunner):
-    def __init__(
-        self,
-        name: str,
-        predictor: BaseEstimator,
-        method_name: str,
-        request_model: typing.Union[typing.Type[pydantic.BaseModel], typing.List[dict]],
-        **kwargs,
-    ):
-        super().__init__(
-            predictor=predictor, name=name, request_model=request_model, **kwargs
-        )
+    def validate(self) -> None:
+        if len(self.method_names) != 1:
+            raise ValueError("SklearnExecutor only supports one method")
 
-        if not hasattr(predictor, method_name):
-            raise ValueError(f"Predictor does not have method {method_name}")
+        if not hasattr(self.predictor, self.method_names[0]):
+            raise ValueError(f"Predictor does not have method {self.method_names[0]}")
 
-        self._method_name = method_name
+    def execute(self, input_df) -> dict:
+        predictor_method = getattr(self.predictor, self.method_names[0])
 
-    @property
-    def method_name(self) -> str:
-        return self._method_name
-
-    @property
-    def method(self) -> typing.Callable:
-        return getattr(self.predictor, self.method_name)
-
-    def execute(self, input_df: pd.DataFrame) -> typing.Any:
-        return {"result": self.method(input_df).tolist()[0]}
+        return {"result": predictor_method(input_df).tolist()[0]}
 
 
 class SklearnPipelineRunner(SklearnBaseRunner):
-    def __init__(
-        self,
-        name: str,
-        predictor: Pipeline,
-        method_names: typing.List[str],
-        request_model: typing.Union[typing.Type[pydantic.BaseModel], typing.List[dict]],
-        **kwargs,
-    ):
-        kwargs["response_model"] = kwargs.get(
-            "response_model", schemas.ResultResponseWithStepsModel
-        )
-
-        super().__init__(
-            name=name,
-            predictor=predictor,
-            request_model=request_model,
-            **kwargs,
-        )
-
-        method_names = [method_names] if isinstance(method_names, str) else method_names
-
-        if not hasattr(predictor, "steps"):
+    def validate(self) -> None:
+        if not hasattr(self.predictor, "steps"):
             raise ValueError("Predictor does not have steps")
 
-        if len(predictor.steps) != len(method_names):
+        if len(self.predictor.steps) != len(self.method_names):
             raise ValueError(
-                f"Predictor does not have the same number of steps ({len(predictor.steps)}) as method names ({len(method_names)})"
+                f"Predictor does not have the same number of steps ({len(self.predictor.steps)}) as method names ({len(self.method_names)})"
             )
 
-        for i, method_name in enumerate(method_names):
-            if not hasattr(predictor.steps[i][1], method_name):
+        for i, method_name in enumerate(self.method_names):
+            if not hasattr(self.predictor.steps[i][1], method_name):
                 raise ValueError(
-                    f"Predictor does not have method {method_name} in step {predictor.steps[i][0]}"
+                    f"Predictor does not have method {method_name} in step {self.predictor.steps[i][0]}"
                 )
 
-        self._method_names = method_names
-
-    @property
-    def method_names(self) -> typing.List[str]:
-        return self._method_names
-
-    def execute(self, input_df: pd.DataFrame) -> typing.Any:
+    def execute(self, input_df: pd.DataFrame) -> dict:
         step_outputs = {}
         previous_step_output = input_df.copy()
         for i, method_name in enumerate(self.method_names):
@@ -153,7 +113,7 @@ class SklearnPipelineRunner(SklearnBaseRunner):
                 raise fastapi.HTTPException(
                     status_code=500,
                     detail={
-                        "runner": self.endpoint_metadata_manager.name,
+                        "runner": self.name,
                         "step": step_name,
                         "method": method_name,
                         **exceptions.parse_exception(ex),
@@ -179,3 +139,11 @@ class SklearnPipelineRunner(SklearnBaseRunner):
             "result": step_outputs[step_name][0],
             "steps": step_outputs,
         }
+
+    @property
+    def response_model(self) -> typing.Type[pydantic.BaseModel]:
+        return schemas.ResultResponseWithStepsModel
+
+    @response_model.setter
+    def response_model(self, value: typing.Type[pydantic.BaseModel]):
+        pass

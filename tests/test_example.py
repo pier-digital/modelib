@@ -60,7 +60,7 @@ def test_example():
             ml.SklearnRunner(
                 name="my simple model",
                 predictor=example.MODEL,
-                method_name="predict",
+                method_names="predict",
                 request_model=example.InputData,
             ),
             "/my-simple-model",
@@ -70,7 +70,7 @@ def test_example():
             ml.SklearnRunner(
                 name="my 232, simple model",
                 predictor=example.MODEL,
-                method_name="predict",
+                method_names="predict",
                 request_model=example.features_metadata,
             ),
             "/my-232-simple-model",
@@ -78,7 +78,7 @@ def test_example():
         ),
         (
             ml.SklearnPipelineRunner(
-                "Pipeline Model",
+                name="Pipeline Model",
                 predictor=example.MODEL,
                 method_names=["transform", "predict"],
                 request_model=example.InputData,
@@ -101,7 +101,7 @@ def test_example():
         ),
         (
             ml.SklearnPipelineRunner(
-                "My SUPER    Pipeline Model",
+                name="My SUPER    Pipeline Model",
                 predictor=example.MODEL,
                 method_names=["transform", "predict"],
                 request_model=example.features_metadata,

@@ -46,12 +46,12 @@ MODEL = create_model()
 simple_runner = ml.SklearnRunner(
     name="my simple model",
     predictor=MODEL,
-    method_name="predict",
+    method_names="predict",
     request_model=InputData,  # OR request_model=features_metadata
 )
 
 pipeline_runner = ml.SklearnPipelineRunner(
-    "Pipeline Model",
+    name="Pipeline Model",
     predictor=MODEL,
     method_names=["transform", "predict"],
     request_model=InputData,

@@ -66,7 +66,7 @@ import modelib as ml
 simple_runner = ml.SklearnRunner(
     name="my simple model",
     predictor=MODEL,
-    method_name="predict",
+    method_names="predict",
     request_model=request_model,
 )
 ```
@@ -75,7 +75,7 @@ Another option is to use the `SklearnPipelineRunner` class which allows you to g
 
 ```python
 pipeline_runner = ml.SklearnPipelineRunner(
-    "Pipeline Model",
+    name="Pipeline Model",
     predictor=MODEL,
     method_names=["transform", "predict"],
     request_model=request_model,

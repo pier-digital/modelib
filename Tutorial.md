@@ -81,7 +81,7 @@ class InputData(pydantic.BaseModel):
 simple_runner = ml.SklearnRunner(
     name="my simple model",
     predictor=create_model(),
-    method_name="predict",
+    method_names="predict",
     request_model=InputData,
 )
 
@@ -91,7 +91,7 @@ app = ml.init_app(runners=[simple_runner])
 Note que é necessário criar um `Runner` a partir do modelo treinado. Além disso, precisamos definir:
 
 - `name`: nome que será utilizado na definição do path do endpoint gerado;
-- `method_name`: nome do método do preditor que será utilizado (`predict`, `transform`, etc);
+- `method_names`: nome do método do preditor que será utilizado (`predict`, `transform`, etc);
 - `request_model`: modelo que define os inputs esperados pelo modelo.
 
 ### Definindo o formato dos inputs

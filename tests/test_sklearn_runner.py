@@ -1,5 +1,4 @@
 from modelib.runners.sklearn import SklearnRunner
-from modelib.runners.base import EndpointMetadataManager
 import example
 import pandas as pd
 import pytest
@@ -28,15 +27,14 @@ def test_create_sklearn_runner(input_example_df, input_example):
     runner = SklearnRunner(
         name="my simple model",
         predictor=example.create_model(),
-        method_name="predict",
+        method_names="predict",
         request_model=example.features_metadata,
     )
     assert runner is not None
     assert isinstance(runner, SklearnRunner)
 
-    assert isinstance(runner.endpoint_metadata_manager, EndpointMetadataManager)
-    assert runner.endpoint_metadata_manager.name == "my simple model"
-    assert runner.endpoint_metadata_manager.slug == "my-simple-model"
+    assert runner.name == "my simple model"
+    assert runner.slug == "my-simple-model"
 
     assert runner.execute(input_example_df) == {"result": 0}
 
@@ -44,16 +42,14 @@ def test_create_sklearn_runner(input_example_df, input_example):
 
     assert runner_func is not None
     assert callable(runner_func)
-    assert runner_func(
-        runner.endpoint_metadata_manager.request_model(**input_example_df)
-    ) == {"result": 0}
+    assert runner_func(runner.request_model(**input_example_df)) == {"result": 0}
 
 
 def test_sklearn_runner_with_error():
     runner = SklearnRunner(
         name="my simple model",
         predictor=example.create_model(),
-        method_name="predict",
+        method_names="predict",
         request_model=example.features_metadata,
     )
 

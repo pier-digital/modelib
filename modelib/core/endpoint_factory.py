@@ -3,27 +3,26 @@ import typing
 import fastapi
 
 
-from modelib.runners.base import EndpointMetadataManager, BaseRunner
+from modelib.runners.base import BaseRunner
 
 
 def create_runner_endpoint(
     app: fastapi.FastAPI,
-    runner_func: typing.Callable,
-    endpoint_metadata_manager: EndpointMetadataManager,
+    runner: BaseRunner,
     **kwargs,
 ) -> fastapi.FastAPI:
-    path = f"/{endpoint_metadata_manager.slug}"
+    path = f"/{runner.slug}"
 
     route_kwargs = {
-        "name": endpoint_metadata_manager.name,
+        "name": runner.name,
         "methods": ["POST"],
-        "response_model": endpoint_metadata_manager.response_model,
+        "response_model": runner.response_model,
     }
     route_kwargs.update(kwargs)
 
     app.add_api_route(
         path,
-        runner_func,
+        runner.get_runner_func(),
         **route_kwargs,
     )
 
@@ -40,8 +39,7 @@ def create_runners_router(
     for runner in runners:
         router = create_runner_endpoint(
             router,
-            runner_func=runner.get_runner_func(),
-            endpoint_metadata_manager=runner.endpoint_metadata_manager,
+            runner=runner,
         )
 
     return router
