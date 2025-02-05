@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "modelib"
-version = "0.3.0a3"
+version = "0.3.0a4"
 description = "A minimalist framework for online deployment of sklearn-like models"
 authors = ["Gabriel Guarisa <gabrielguarisa@gmail.com>"]
 readme = "README.md"
@@ -11,19 +11,20 @@ keywords = ["machine learning", "fastapi", "sklearn", "online deployment"]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
-numpy = ">=2.0.0"
-pandas = ">=2.0.0"
+numpy = "~=2.0"
+pandas = "~=2.0"
 scikit-learn = "*"
 fastapi = "*"
-python-slugify = "^8.0.1"
-pydantic = ">=2.0.0"
-uvicorn = "^0.31.0"
+python-slugify = "~=8.0"
+pydantic = "~=2.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.1.13"
 pytest = "^8.0.0"
 pytest-cov = "^4.1.0"
 httpx = "^0.27.2"
+scipy = "^1.15.1"
+uvicorn = "^0.34.0"
 
 [tool.pytest.ini_options]
 addopts = "-vv --junitxml=pytest.xml -p no:warnings --cov-report term-missing:skip-covered --cov=modelib"
