@@ -10,6 +10,9 @@ from .base import BaseRunner
 from sklearn.base import BaseEstimator
 import fastapi
 from abc import abstractmethod
+import logging
+
+logger = logging.getLogger("modelib")
 
 
 class SklearnBaseRunner(BaseRunner):
@@ -47,13 +50,20 @@ class SklearnBaseRunner(BaseRunner):
         def runner_func(data: self.request_model):
             try:
                 payload = data.model_dump(by_alias=True)
+                logger.info(f"Running {self.name} with payload: {payload}")
+
                 input_df = (
                     pd.DataFrame(payload, index=[0])
                     if isinstance(data, pydantic.BaseModel)
                     else data
                 )
-                return self.execute(input_df)
+                result = self.execute(input_df)
+
+                logger.info(f"Finished running {self.name}: {result}")
+
+                return result
             except Exception as ex:
+                logger.error(f"Error running {self.name}: {ex}")
                 if isinstance(ex, fastapi.HTTPException):
                     raise ex
 
