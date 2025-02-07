@@ -25,43 +25,6 @@ class NullToDefaultValidator:
         return value
 
 
-def pydantic_field_from_dict(field_dict: dict) -> pydantic.Field:
-    """Create pydantic field from dict"""
-    field_dict = field_dict.copy()
-    default = field_dict.pop("default", None)
-
-    dtype = field_dict.pop("dtype", None)
-    dtype = MAP_PANDAS_DTYPE_TO_PYDANTIC.get(dtype, str)
-
-    if default is None:
-        default = Ellipsis
-    else:
-        dtype = typing.Annotated[
-            typing.Optional[dtype],
-            pydantic.BeforeValidator(NullToDefaultValidator(default)),
-        ]
-
-    alias = field_dict.get("name")
-
-    return (dtype, pydantic.Field(default, alias=alias, json_schema_extra=field_dict))
-
-
-def pydantic_model_from_list_of_dicts(name, fields) -> typing.Type[pydantic.BaseModel]:
-    """Create pydantic model from list of dicts"""
-    fields_dict = {}
-    fields_dict["model_config"] = pydantic.ConfigDict(protected_namespaces=())
-
-    for i, field in enumerate(fields):
-        field_name = field.get("alias", None) or field.get("name", None) or f"field_{i}"
-        fields_dict[field_name] = pydantic_field_from_dict(field)
-
-    return pydantic.create_model(
-        name,
-        __base__=pydantic.BaseModel,
-        **fields_dict,
-    )
-
-
 class ResultResponseModel(pydantic.BaseModel):
     result: typing.Any
 
@@ -81,3 +44,47 @@ class FeatureMetadataSchema(pydantic.BaseModel):
 
 class HealthCheckStausSchema(pydantic.BaseModel):
     status: str
+
+
+def pydantic_model_from_list_of_dicts(name, fields) -> typing.Type[pydantic.BaseModel]:
+    """Create pydantic model from list of dicts"""
+    fields_dict = {}
+    fields_dict["model_config"] = pydantic.ConfigDict(protected_namespaces=())
+
+    for i, field in enumerate(fields):
+        field_name = field.get("name")
+        fields_dict[field_name] = pydantic_field_from_dict(field)
+
+    return pydantic.create_model(
+        name,
+        __base__=pydantic.BaseModel,
+        **fields_dict,
+    )
+
+
+def pydantic_field_from_dict(field_dict: dict) -> pydantic.Field:
+    """Create pydantic field from dict"""
+    field_dict = field_dict.copy()
+    default = field_dict.pop("default", None)
+
+    dtype = field_dict.pop("dtype", None)
+    dtype = MAP_PANDAS_DTYPE_TO_PYDANTIC.get(dtype, str)
+
+    if default is None:
+        default = Ellipsis
+    else:
+        dtype = typing.Annotated[
+            typing.Optional[dtype],
+            pydantic.BeforeValidator(NullToDefaultValidator(default)),
+        ]
+
+    field_alias = field_dict.pop("alias", None)
+
+    kwargs = {
+        "json_schema_extra": field_dict,
+    }
+
+    if field_alias:
+        kwargs["alias"] = field_alias
+
+    return (dtype, pydantic.Field(default, **kwargs))

@@ -18,11 +18,13 @@ class BaseRunner:
         name: str,
         request_model: typing.Union[typing.Type[pydantic.BaseModel], typing.List[dict]],
         response_model: typing.Type[pydantic.BaseModel] = schemas.ResultResponseModel,
+        by_alias: bool = True,
         **kwargs,
     ):
         self._name = name
         self.request_model = request_model
         self.response_model = response_model
+        self._by_alias = by_alias
 
     @property
     def name(self) -> str:
@@ -35,6 +37,10 @@ class BaseRunner:
     @property
     def request_model(self) -> typing.Type[pydantic.BaseModel]:
         return self._request_model
+
+    @property
+    def by_alias(self) -> bool:
+        return self._by_alias
 
     @request_model.setter
     def request_model(

@@ -12,14 +12,13 @@ import fastapi
 from abc import abstractmethod
 import logging
 
-logger = logging.getLogger("modelib")
-
 
 class SklearnBaseRunner(BaseRunner):
     def __init__(
         self,
         predictor: BaseEstimator,
         method_names: typing.Union[str, typing.List[str]],
+        logger: logging.Logger = logging.getLogger("uvicorn.error"),
         **kwargs,
     ):
         self._method_names = (
@@ -27,6 +26,7 @@ class SklearnBaseRunner(BaseRunner):
         )
         self._predictor = predictor
         self.validate()
+        self._logger = logger
 
         super().__init__(**kwargs)
 
@@ -48,9 +48,9 @@ class SklearnBaseRunner(BaseRunner):
 
     def get_runner_func(self) -> typing.Callable:
         def runner_func(data: self.request_model):
+            payload = None
             try:
-                payload = data.model_dump(by_alias=True)
-                logger.info(f"Running {self.name} with payload: {payload}")
+                payload = data.model_dump(by_alias=self.by_alias)
 
                 input_df = (
                     pd.DataFrame(payload, index=[0])
@@ -59,11 +59,25 @@ class SklearnBaseRunner(BaseRunner):
                 )
                 result = self.execute(input_df)
 
-                logger.info(f"Finished running {self.name}: {result}")
+                self._logger.info(
+                    {
+                        "msg": "Successfully executed runner",
+                        "runner": self.name,
+                        "payload": payload,
+                        "result": result,
+                    },
+                )
 
                 return result
             except Exception as ex:
-                logger.error(f"Error running {self.name}: {ex}")
+                self._logger.error(
+                    {
+                        "msg": "Error during runner execution",
+                        "runner": self.name,
+                        "payload": payload,
+                    },
+                    exc_info=True,
+                )
                 if isinstance(ex, fastapi.HTTPException):
                     raise ex
 
