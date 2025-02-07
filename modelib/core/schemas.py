@@ -52,7 +52,7 @@ def pydantic_model_from_list_of_dicts(name, fields) -> typing.Type[pydantic.Base
     fields_dict["model_config"] = pydantic.ConfigDict(protected_namespaces=())
 
     for i, field in enumerate(fields):
-        field_name = field.get("alias", field.get("name", f"feat_{i}"))
+        field_name = field.get("alias", None) or field.get("name", None) or f"field_{i}"
         fields_dict[field_name] = pydantic_field_from_dict(field)
 
     return pydantic.create_model(
