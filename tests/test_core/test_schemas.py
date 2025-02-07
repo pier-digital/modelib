@@ -91,52 +91,73 @@ def test_create_model():
     assert issubclass(model, pydantic.BaseModel)
 
     all_default = model(bank_number=1)
+
     assert all_default.model_dump() == {
         "bank_number": 1,
-        "plan_type_num": 1.0,
-        "user_age": 21,
-        "latest_market_value_cents": 250000.0,
-        "score_emailage": 500,
+        "sm_safe_claim_score_contracts_v2:contract_active_days": 60,
+        "sm_safe_claim_score_contracts_v2:graph_suspect_fraud_rate": -1,
+        "sm_safe_claim_score_contracts_v2:latest_market_value_cents": 250000.0,
+        "sm_safe_claim_score_contracts_v2:plan_type_num": 1.0,
+        "sm_safe_claim_score_contracts_v2:score_emailage": 500,
+        "sm_safe_claim_score_contracts_v2:user_age": 21,
+    }
+
+    assert all_default.model_dump(by_alias=True) == {
+        "bank_number": 1,
         "contract_active_days": 60,
         "graph_suspect_fraud_rate": -1,
+        "latest_market_value_cents": 250000.0,
+        "plan_type_num": 1.0,
+        "score_emailage": 500,
+        "user_age": 21,
     }
 
     partial_default = model(
         **{
             "bank_number": 1,
-            "sm_safe_claim_score_contracts_v2:plan_type_num": 0.8,
-            "sm_safe_claim_score_contracts_v2:user_age": 25,
+            "plan_type_num": 0.8,
+            "user_age": 25,
         }
     )
 
     assert partial_default.model_dump() == {
         "bank_number": 1,
-        "plan_type_num": 0.8,
-        "user_age": 25,
-        "latest_market_value_cents": 250000.0,
-        "score_emailage": 500,
+        "sm_safe_claim_score_contracts_v2:contract_active_days": 60,
+        "sm_safe_claim_score_contracts_v2:graph_suspect_fraud_rate": -1,
+        "sm_safe_claim_score_contracts_v2:latest_market_value_cents": 250000.0,
+        "sm_safe_claim_score_contracts_v2:plan_type_num": 0.8,
+        "sm_safe_claim_score_contracts_v2:user_age": 25,
+        "sm_safe_claim_score_contracts_v2:score_emailage": 500,
+    }
+
+    assert partial_default.model_dump(by_alias=True) == {
+        "bank_number": 1,
         "contract_active_days": 60,
         "graph_suspect_fraud_rate": -1,
+        "latest_market_value_cents": 250000.0,
+        "plan_type_num": 0.8,
+        "user_age": 25,
+        "score_emailage": 500,
     }
 
     all_non_default = model(
         **{
             "bank_number": 1,
-            "sm_safe_claim_score_contracts_v2:plan_type_num": 0.8,
-            "sm_safe_claim_score_contracts_v2:user_age": 25,
-            "sm_safe_claim_score_contracts_v2:latest_market_value_cents": 10000.0,
-            "sm_safe_claim_score_contracts_v2:score_emailage": 10,
-            "sm_safe_claim_score_contracts_v2:contract_active_days": 40,
-            "sm_safe_claim_score_contracts_v2:graph_suspect_fraud_rate": -1,
+            "plan_type_num": 0.8,
+            "user_age": 25,
+            "latest_market_value_cents": 10000.0,
+            "score_emailage": 10,
+            "contract_active_days": 40,
+            "graph_suspect_fraud_rate": -1,
         }
     )
 
     assert all_non_default.model_dump() == {
         "bank_number": 1,
-        "plan_type_num": 0.8,
-        "user_age": 25,
-        "latest_market_value_cents": 10000.0,
-        "score_emailage": 10,
-        "contract_active_days": 40,
-        "graph_suspect_fraud_rate": -1,
+        "sm_safe_claim_score_contracts_v2:plan_type_num": 0.8,
+        "sm_safe_claim_score_contracts_v2:user_age": 25,
+        "sm_safe_claim_score_contracts_v2:latest_market_value_cents": 10000.0,
+        "sm_safe_claim_score_contracts_v2:score_emailage": 10,
+        "sm_safe_claim_score_contracts_v2:contract_active_days": 40,
+        "sm_safe_claim_score_contracts_v2:graph_suspect_fraud_rate": -1,
     }

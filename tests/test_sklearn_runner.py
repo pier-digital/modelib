@@ -23,7 +23,7 @@ def input_example_df(input_example) -> pd.DataFrame:
     )
 
 
-def test_create_sklearn_runner(input_example_df, input_example):
+def test_create_sklearn_runner(input_example_df):
     runner = SklearnRunner(
         name="my simple model",
         predictor=example.create_model(),
