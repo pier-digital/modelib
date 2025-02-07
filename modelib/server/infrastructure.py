@@ -1,9 +1,8 @@
-from fastapi import APIRouter
-from prometheus_fastapi_instrumentator import Instrumentator
+import fastapi
 
 from modelib.core import schemas
 
-router = APIRouter(prefix="", tags=["Infrastructure"])
+router = fastapi.APIRouter(prefix="", tags=["Infrastructure"])
 
 
 @router.get("/healthz", response_model=schemas.HealthCheckStausSchema)
@@ -24,15 +23,5 @@ async def livez():
     return schemas.HealthCheckStausSchema(status="ok")
 
 
-def init_app(app):
-    Instrumentator(
-        excluded_handlers=[
-            "/metrics",
-            "/docs*",
-            "/livez",
-            "/readyz",
-            "/healthz",
-            "openapi.json",
-        ]
-    ).instrument(app).expose(app, tags=["Infrastructure"])
+def init_app(app: fastapi.FastAPI):
     app.include_router(router)
