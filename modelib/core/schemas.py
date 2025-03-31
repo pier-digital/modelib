@@ -49,7 +49,6 @@ class HealthCheckStausSchema(pydantic.BaseModel):
 def pydantic_model_from_list_of_dicts(name, fields) -> typing.Type[pydantic.BaseModel]:
     """Create pydantic model from list of dicts"""
     fields_dict = {}
-    fields_dict["model_config"] = pydantic.ConfigDict(protected_namespaces=())
 
     for i, field in enumerate(fields):
         field_name = field.get("name")
